@@ -12,6 +12,9 @@ function create_events_dict()
     labeled_episodes = Dict{String,Array{Any}}()
     for episode in eachrow(events_dataframe)
         episode_name = episode.Id
+
+        label = episode.Type
+
         # file_data(filename) will return ->  (Matrix, frequency)
         file_data = files_dict[episode_name]        
         start_index = abs(convert(Int32,episode.Init))
@@ -29,10 +32,10 @@ function create_events_dict()
         end
         
         if ((item = get(labeled_episodes,episode_name,nothing)) !== nothing)
-            push!(labeled_episodes[episode_name],data)
+            push!(labeled_episodes[episode_name],(data,label))
         else
             new_array = Array{Any}(undef,0)
-            push!(new_array,data)
+            push!(new_array,(data,label))
             push!(labeled_episodes,episode_name=>new_array)
         end
 
@@ -43,4 +46,32 @@ function create_events_dict()
 
 end
 
+
+
+function getTimeSlot(episode, duration)
+    ep_size = size(episode)[1]
+    
+    start_index = max(1,trunc(Int32,rand() * (ep_size-duration) -1))
+    end_index  = min(ep_size,start_index + duration - 1)  
+    sample = episode[start_index:end_index,:]    
+
+    sample    
+end
+
+function create_sample_for_episodes(all_episodes, d) 
+    all_samples = Array{Any}(undef,0)
+    for (_,episodes) in all_episodes 
+        for (ep,y) in episodes
+            x = getTimeSlot(ep,d)
+            #samples will contain the slice, and the label 
+            push!(all_samples,(x,y))
+        end
+
+    end
+    
+    all_samples
+
+end
+
 # all_files, events_dataframe, events_only_dict = create_events_dict()
+# cc = create_sample_for_episodes(events_only_dict,60)[1:3]
