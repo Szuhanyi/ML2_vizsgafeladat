@@ -21,21 +21,23 @@ function loadRecording(file_name)
             data = loadFile(path_de * file_name*".csv") 
         catch 
             #not sure what to do with no type, they are not labeld to three types , but to ONE 
+            # I guess we could deduce the correct label from the events.csv file ???? 
+
+            # no... on second hand , the info is missing from the events.csv file as well.. 
             # data = loadFile(path_notype * file_name*".csv") 
         end
     end
 
     #load in the three columns containing the signal data, and the frequency
-    # transformation should only happen later, otherwise the events.csv indexes would became obselete 
+    # transformation should only happen later, otherwise the events.csv indexes would became obselete ??? not sure, but hey.. 
     if (size(data)[1] > 0)
-        data = Matrix(data[:,2:5])
-    end
-    # @show data |> size
+        data = Matrix(data[:,2:4])
+    end    
+    
     (data,frequency)
-
 end
 
-#load D samples from events.csv 
+
 function loadFileDict(event_df::DataFrames.DataFrame)
     file_names = unique(event_df[:,1])
     files = Dict{String,Any}()
@@ -60,4 +62,4 @@ function loadFilesAndEvents()
     files_dict,events
 end
 
-dict,events = loadFilesAndEvents()
+
