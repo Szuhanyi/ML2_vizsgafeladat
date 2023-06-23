@@ -1,30 +1,31 @@
 import DataFrames, CSV
+include("./config.jl")
+import .DataCfgs
 
 function loadFile(path)
     CSV.read(path, DataFrames.DataFrame)
 end
 
-
 #files containing the orginal data (sensory for now, the three columns )
-function loadRecording(file_name)
+function loadRecording(record_id)
     data = []
     path_tdcs = "./input/train/tdcsfog/"
     path_de = "./input/train/defog/"
     path_notype = "./input/train/notype/"
     frequency = 128
     try 
-        data = loadFile(path_tdcs * file_name*".csv")
+        data = loadFile(joinpath(DataCfgs.tdsc_dir, "$record_id.csv"))
     catch
         try
             #these files are of freq 100
             frequency = 100
-            data = loadFile(path_de * file_name*".csv") 
+            data = loadFile(joinpath(DataCfgs.defog_dir, "$record_id.csv")) 
         catch 
             #not sure what to do with no type, they are not labeld to three types , but to ONE 
             # I guess we could deduce the correct label from the events.csv file ???? 
 
             # no... on second hand , the info is missing from the events.csv file as well.. 
-            # data = loadFile(path_notype * file_name*".csv") 
+            # data = loadFile(joinpath(DataCfgs.notype_dir, "$record_id.csv")) 
         end
     end
 
