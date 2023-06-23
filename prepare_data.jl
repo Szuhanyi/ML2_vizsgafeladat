@@ -9,9 +9,6 @@ end
 #files containing the orginal data (sensory for now, the three columns )
 function loadRecording(record_id)
     data = []
-    path_tdcs = "./input/train/tdcsfog/"
-    path_de = "./input/train/defog/"
-    path_notype = "./input/train/notype/"
     frequency = 128
     try 
         data = loadFile(joinpath(DataCfgs.tdsc_dir, "$record_id.csv"))
@@ -47,19 +44,22 @@ function loadFileDict(event_df::DataFrames.DataFrame)
         content = loadRecording(f_name)
         push!(files, f_name=>content)
         
-    end    
+    end
+
     files
 end
 
 
 function loadFilesAndEvents()
-    events = CSV.read("./input/events.csv", DataFrames.DataFrame)
+    events = CSV.read(DataCfgs.events_path, DataFrames.DataFrame)
     files_dict = loadFileDict(events)
+
     for row in eachrow(events)
         frequency = files_dict[row.Id][2]
-        row.Init = trunc(Int,row.Init * frequency) + 1
-        row.Completion = trunc(Int,row.Completion * frequency)+1
-    end    
+        row.Init = round(Int, row.Init * frequency)
+        row.Completion = round(Int, row.Completion * frequency)
+    end
+
     files_dict,events
 end
 
