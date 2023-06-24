@@ -1,66 +1,74 @@
 import DataFrames, CSV
 include("./config.jl")
+include("./exception.jl")
 import .DataCfgs
+import .PExcpts
 
-function loadFile(path)
-    CSV.read(path, DataFrames.DataFrame)
+
+struct Recording
+    frequency::Int64
+    record::DataFrames.DataFrame
 end
 
-#files containing the orginal data (sensory for now, the three columns )
-function loadRecording(record_id)
-    data = []
-    frequency = 128
-    try 
-        data = loadFile(joinpath(DataCfgs.tdsc_dir, "$record_id.csv"))
-    catch
-        try
-            #these files are of freq 100
-            frequency = 100
-            data = loadFile(joinpath(DataCfgs.defog_dir, "$record_id.csv")) 
-        catch 
-            #not sure what to do with no type, they are not labeld to three types , but to ONE 
-            # I guess we could deduce the correct label from the events.csv file ???? 
 
-            # no... on second hand , the info is missing from the events.csv file as well.. 
-            # data = loadFile(joinpath(DataCfgs.notype_dir, "$record_id.csv")) 
+#files containing the orginal data (sensory for now, the three columns )
+function loadRecording(record_id::DataFrames.InlineStrings.String15)::Recording
+    frequency = 128
+    file_name = "$record_id.csv"
+
+    file_path = joinpath(DataCfgs.tdsc_dir, file_name)
+    if !isfile(file_path)
+        file_path = joinpath(DataCfgs.notype_dir, file_name)
+        if !isfile(file_path)
+            frequency = 100
+            file_path = joinpath(DataCfgs.defog_dir, file_name)
+            if !isfile(file_path)
+                throw(PExcpts.BadIdError(record_id, "id $record_id not in train set"))
+            end
         end
     end
 
     #load in the three columns containing the signal data, and the frequency
     # transformation should only happen later, otherwise the events.csv indexes would became obselete ??? not sure, but hey.. 
-    if (size(data)[1] > 0)
-        data = Matrix(data[:,2:4])
-    end    
-    
-    (data,frequency)
+    data = CSV.read(file_path, DataFrames.DataFrame)
+    data = data[:,[:AccV,:AccML,:AccAP]]
+
+    return Recording(frequency, data)
 end
-
-
-function loadFileDict(event_df::DataFrames.DataFrame)
-    file_names = unique(event_df[:,1])
-    files = Dict{String,Any}()
-
-    for f_name in file_names
-        content = loadRecording(f_name)
-        push!(files, f_name=>content)
-        
-    end
-
-    files
-end
-
 
 function loadFilesAndEvents()
     events = CSV.read(DataCfgs.events_path, DataFrames.DataFrame)
-    files_dict = loadFileDict(events)
+    DataFrames.dropmissing!(events)
+    files_dict = Dict{String,Recording}()
 
-    for row in eachrow(events)
-        frequency = files_dict[row.Id][2]
-        row.Init = round(Int, row.Init * frequency)
-        row.Completion = round(Int, row.Completion * frequency)
+    for rec_id in unique(events.Id)
+        try
+            rec = loadRecording(rec_id)
+            push!(files_dict, rec_id=>rec)
+        catch except
+            if isa(except, PExcpts.BadIdError)
+                delete!(events, events.Id .== rec_id)
+            else
+                @show except
+            end
+        end
     end
 
-    files_dict,events
+    frequencies = [files_dict[rec_id].frequency for rec_id in events.Id]
+    events.Init = round.(events.Init .* frequencies)
+    events.Completion = round.(events.Completion .* frequencies)
+
+    events, files_dict
 end
 
 
+struct DataLoader
+    events::DataFrames.DataFrame
+    files_dict::Dict{String,Recording}
+end
+
+
+DataLoader() = begin
+    events, files_dict = loadFilesAndEvents()
+    DataLoader(events, files_dict)
+end
