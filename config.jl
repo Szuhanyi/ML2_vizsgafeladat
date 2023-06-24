@@ -14,8 +14,10 @@ end #   DataCfgs
 
 
 module ModelCfgs
-    export D, K
+    export D, K, hidden_dim
 
     D = 128
     K = 3
+    hidden_dim₁ = 64
+    hidden_dim₂ = 32
 end # ModelCfgs

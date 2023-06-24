@@ -7,13 +7,6 @@ import .DataCfgs, .PExcpts
 import Base.length, Base.getindex
 
 
-
-# struct Recording
-#     frequency::Int64
-#     record::DataFrames.DataFrame
-# end
-
-
 #files containing the orginal data (sensory for now, the three columns )
 function loadRecording(record_id::DataFrames.InlineStrings.String15)::DataFrames.DataFrame
     frequency = 128
@@ -74,9 +67,9 @@ struct DataSet
 end
 
 fogTypes = Dict(
-    "Turn" => [0,1,0],
-    "Walking" => [0,0,1],
-    "StartHesitation" => [1,0,0]
+    "StartHesitation"   => [1,0,0],
+    "Turn"              => [0,1,0],
+    "Walking"           => [0,0,1]
 )
 
 DataSet(D::Int64) = begin
