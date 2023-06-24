@@ -37,7 +37,7 @@ function loadRecording(record_id::DataFrames.InlineStrings.String15)::DataFrames
         new_data = [transform(col,100,128) for col in new_data]        
         data = DataFrames.DataFrame(new_data,[:AccV,:AccML,:AccAP])
     end
-    
+
     data = data[:,[:AccV,:AccML,:AccAP]]
 end
 
@@ -73,6 +73,11 @@ struct DataSet
     D::Int64
 end
 
+fogTypes = Dict(
+    "Turn" => [0,1,0],
+    "Walking" => [0,0,1],
+    "StartHesitation" => [1,0,0]
+)
 
 DataSet(D::Int64) = begin
     events, files_dict = loadFilesAndEvents()
@@ -94,5 +99,8 @@ function getindex(data::DataSet, idx::UnitRange{Int64})
             Matrix(data.files_dict[rec_id][s_idx:s_idx+offset,:])
             for (s_idx, rec_id) in Iterators.zip(start_idx, data.events.Id[idx])
     ]..., dims=3)
-    train_x    
+    raw_y = data.events.Type[idx]
+    train_y = hcat([fogTypes[y] for y in raw_y]...)
+    
+    (train_x, train_y)    
 end
