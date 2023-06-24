@@ -19,5 +19,7 @@ module ModelCfgs
     D = 128
     K = 3
     hidden_dim₁ = 64
+    maxpool_dim = 2
     hidden_dim₂ = 32
+    hidden_dim₃ = 16
 end # ModelCfgs
