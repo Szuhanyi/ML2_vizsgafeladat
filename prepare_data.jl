@@ -1,19 +1,21 @@
 include("./config.jl")
 include("./exception.jl")
+include("./ml_utils.jl")
 
 import DataFrames, CSV
 import .DataCfgs, .PExcpts
 import Base.length, Base.getindex
 
 
-struct Recording
-    frequency::Int64
-    record::DataFrames.DataFrame
-end
+
+# struct Recording
+#     frequency::Int64
+#     record::DataFrames.DataFrame
+# end
 
 
 #files containing the orginal data (sensory for now, the three columns )
-function loadRecording(record_id::DataFrames.InlineStrings.String15)::Recording
+function loadRecording(record_id::DataFrames.InlineStrings.String15)::DataFrames.DataFrame
     frequency = 128
     file_name = "$record_id.csv"
 
@@ -27,20 +29,22 @@ function loadRecording(record_id::DataFrames.InlineStrings.String15)::Recording
                 throw(PExcpts.BadIdError(record_id, "id $record_id not in train set"))
             end
         end
+    end 
+
+    data = CSV.read(file_path, DataFrames.DataFrame)           
+    if frequency == 100
+        new_data = [data.AccV, data.AccML, data.AccAP]
+        new_data = [transform(col,100,128) for col in new_data]        
+        data = DataFrames.DataFrame(new_data,[:AccV,:AccML,:AccAP])
     end
-
-    #load in the three columns containing the signal data, and the frequency
-    # transformation should only happen later, otherwise the events.csv indexes would became obselete ??? not sure, but hey.. 
-    data = CSV.read(file_path, DataFrames.DataFrame)
+    
     data = data[:,[:AccV,:AccML,:AccAP]]
-
-    return Recording(frequency, data)
 end
 
 function loadFilesAndEvents()
     events = CSV.read(DataCfgs.events_path, DataFrames.DataFrame)
     DataFrames.dropmissing!(events)
-    files_dict = Dict{String,Recording}()
+    files_dict = Dict{String,DataFrames.DataFrame}()
 
     for rec_id in unique(events.Id)
         try
@@ -55,7 +59,7 @@ function loadFilesAndEvents()
         end
     end
 
-    frequencies = [files_dict[rec_id].frequency for rec_id in events.Id]
+    frequencies = 128
     events.Init = convert.(Int64, round.(events.Init .* frequencies))
     events.Completion = convert.(Int64, round.(events.Completion .* frequencies))
 
@@ -65,7 +69,7 @@ end
 
 struct DataSet
     events::DataFrames.DataFrame
-    files_dict::Dict{String,Recording}
+    files_dict::Dict{String,DataFrames.DataFrame}
     D::Int64
 end
 
@@ -86,8 +90,9 @@ function getindex(data::DataSet, idx::UnitRange{Int64})
     min_idx = data.events.Init[idx]
     max_idx = data.events.Completion[idx] .- offset
     start_idx = [rand(s:e) for (s, e) in Iterators.zip(min_idx, max_idx)]
-    cat([
-            Matrix(data.files_dict[rec_id].record[s_idx:s_idx+offset,:])
+    train_x = cat([
+            Matrix(data.files_dict[rec_id][s_idx:s_idx+offset,:])
             for (s_idx, rec_id) in Iterators.zip(start_idx, data.events.Id[idx])
     ]..., dims=3)
+    train_x    
 end
