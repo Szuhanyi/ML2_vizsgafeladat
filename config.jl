@@ -16,7 +16,7 @@ end #   DataCfgs
 module ModelCfgs
     export D, K, hidden_dim
 
-    D = 128
+    D = 512
     K = 3
     hidden_dim₁ = 64
     maxpool_dim = 2
