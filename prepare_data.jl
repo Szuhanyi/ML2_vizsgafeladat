@@ -90,7 +90,7 @@ function getindex(data::DataSet, idx::UnitRange{Int64})
     start_idx = [rand(min(s,e):max(s,e)) for (s, e) in Iterators.zip(min_idx, max_idx)]
 
     train_x = cat([
-            Matrix(data.files_dict[rec_id][s_idx:s_idx+offset,:])
+            Matrix(data.files_dict[rec_id][s_idx:s_idx+offset,:])'
             for (s_idx, rec_id) in Iterators.zip(start_idx, data.events.Id[idx])
     ]..., dims=3)
     raw_y = data.events.Type[idx]
